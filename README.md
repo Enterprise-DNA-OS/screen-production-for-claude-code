@@ -1,115 +1,125 @@
-<h1 align="center">Screen Production for Claude Code</h1>
+# Screen Production for Claude Code
 
-<p align="center">
-  <strong>The open-source screen production planning system that is just a database and Claude Code.</strong>
-</p>
+Your shoot days, scenes, cast, crew and working hours in a database you own. Built by Enterprise DNA. Works with Claude Code, Codex, OpenCode or Cursor.
 
-<p align="center">
-  Created by <a href="https://www.enterprisedna.co"><strong>Enterprise DNA</strong></a>. Free and open source. Works with Claude Code, Codex, OpenCode or Cursor.
-</p>
+| Do it yourself | We customise it | We run it for you |
+|---|---|---|
+| Free source under MIT. Install and run the demo. | Your production rules, fields and Dramatify data mapped across. | Installed, connected and operated through Omni by Enterprise DNA. |
+| [Quick start](#quick-start) | [Get your version built](https://enterprisedna.co/omni/book/?offer=replace-software&utm_medium=readme&utm_campaign=dramatify) | [Setup fee, then a retainer](https://enterprisedna.co/omni/book/?offer=replace-software&utm_medium=readme-managed&utm_campaign=dramatify) |
 
-<!-- three-doors -->
-<table align="center">
-  <tr>
-    <td align="center"><strong>Do it yourself</strong><br/>Clone it, run it, own it. Free, MIT.<br/><a href="#quick-start">Quick start</a></td>
-    <td align="center"><strong>We customise it</strong><br/>Your fields, your rules, your Dramatify data brought across.<br/><a href="https://enterprisedna.co/omni/book/?utm_source=github&utm_medium=readme&utm_campaign=dramatify">Book a call</a></td>
-    <td align="center"><strong>We run it for you</strong><br/>Installed, connected and operated inside Omni. Setup fee, then a retainer.<br/><a href="https://enterprisedna.co/omni/instead-of/dramatify?utm_source=github&utm_medium=readme&utm_campaign=dramatify">How it works</a></td>
-  </tr>
-</table>
+## What this runs
 
-<p align="center">
-  <a href="#what-is-this">What is this</a> &bull;
-  <a href="#why-no-front-end">Why no front end</a> &bull;
-  <a href="#quick-start">Quick start</a> &bull;
-  <a href="#the-commands">Commands</a> &bull;
-  <a href="#instead-of-dramatify">Instead of Dramatify</a> &bull;
-  <a href="#want-it-installed-and-run-for-you">Installed for you</a> &bull;
-  <a href="#license">License</a>
-</p>
+The production office's morning call check, shoot week, cast day-out-of-days, crew conflict review, daily hours reconciliation and wrap report. It holds scenes in page eighths, units, location permission dates, day-specific risk controls and the history of record changes. Draft call sheets and daily production reports come from those same records.
 
-<p align="center">
-  <img src="https://img.shields.io/badge/Node-20+-339933?style=flat-square" alt="Node 20+" />
-  <img src="https://img.shields.io/badge/PostgreSQL-any-336791?style=flat-square" alt="PostgreSQL" />
-  <img src="https://img.shields.io/badge/PGlite-embedded-3ecf8e?style=flat-square" alt="PGlite" />
-  <img src="https://img.shields.io/badge/License-MIT-yellow?style=flat-square" alt="MIT License" />
-</p>
+[Dramatify's Professional plan](https://dramatify.com/subscription-plans/usd) lists US$36 per paid seat per month on monthly billing, or US$27 per seat per month billed annually, with five paid seats minimum. Read-only cast and crew are included free. A 50-editor monthly-billed scenario is US$21,600 per year. This is arithmetic from the published rate, not a customer invoice or a savings promise. Checked 11 November 2026.
 
----
-
-## What is this
-
-Screen Production for Claude Code does the job you pay Dramatify for, as a Postgres database and a set of agent commands. There is no web front end. You open the folder in [Claude Code](https://claude.com/claude-code) (or Codex, OpenCode, Cursor: see `AGENTS.md`) and ask for what you want in plain language. It runs the right query, and it can answer questions the Dramatify dashboard cannot.
-
-<!-- TODO(author): the annual bill. One sentence: what a 10 to 50 person business typically pays Dramatify per year, all in, with a source. -->
-
-Want the same thing with a web front end, or built on a different stack? That is a customisation, and it is exactly what Enterprise DNA does: [book a call](https://enterprisedna.co/omni/book/?utm_source=github&utm_medium=readme&utm_campaign=dramatify).
-
-<!-- TODO(author): two or three sentences on what this specific product covers and who it is for. -->
-
-## Why no front end
-
-- The front end was only ever there because the database was hard to talk to. That is no longer true.
-- Your data sits in plain Postgres tables you own. Any tool can read them. No export, no lock-in.
-- No seats, no tiers, no add-ons. Read [docs/why-no-front-end.md](docs/why-no-front-end.md) for the honest trade-offs too.
+The free base covers production-office records. It does not implement script editing, media storage, live broadcast rundowns, teleprompter control, payroll or a mobile crew portal. Dramatify has those broader workflows. Pick this base when the office records are the problem to solve. [Scope and operating limits](docs/why-no-front-end.md).
 
 ## Quick start
 
-Sixty seconds, no database install (an embedded Postgres runs inside Node):
+Requires Node.js 22 or newer. No database installation for the local demo.
 
 ```bash
 git clone https://github.com/Enterprise-DNA-OS/screen-production-for-claude-code.git
 cd screen-production-for-claude-code
 npm install
+npm test
 npm run demo
+npm run view
+npm run docs
 ```
 
-Then open the folder in Claude Code and type a slash command. <!-- TODO(author): name the first command to try. -->
+Open the folder in your coding agent and ask for `/attention`. The fictional demo has a wharf shoot tomorrow without renewed location permission, two cast gaps, a camera operator booked on two productions, an unshot insert, an unscheduled exterior, a missing wrap and a short recorded rest interval. Dates move with the day you seed the demo. Running the seed again preserves records.
 
-### Use it with your own Postgres or Supabase
-
-Copy `.env.example` to `.env`, set `DATABASE_URL`, then `npm run migrate`. Same commands, shared data, no per-seat fee.
+For your own data, start with a separate empty DATA_DIR, run `npm run migrate`, then add production, location and roster records. Do not run demo against business records. To use a shared Postgres database, set DATABASE_URL in your local environment and run the migration. No credentials are stored in this repo. The database account needs owner permissions to run migrations. Tables have row-level security enabled without public policies, so anonymous web clients have no access. The CLI is for trusted production-office operators, not individual crew logins.
 
 ## The commands
 
-<!-- TODO(author): a table of the slash commands in .claude/commands and what each one does. -->
-
-| Command | What it does |
+| Command | Job |
 |---|---|
-| `/...` | ... |
+| `/productions` | List the productions and their stage. |
+| `/people` | List cast and crew before choosing a name. |
+| `/locations` | Review location permissions and emergency plans. |
+| `/shoot-week` | Plan the next seven days of shooting. |
+| `/schedule` | Read every shoot day and compare scene minutes to the available day. |
+| `/scenes` | Review scene order, page eighths, scheduling and shot status. |
+| `/cast-gaps` | Find cast members without confirmed coverage for the full shoot day. |
+| `/crew-clashes` | Find overlapping crew and cast bookings, including overnight calls. |
+| `/location-clashes` | Find two units booked into the same location at overlapping times. |
+| `/day-out-of-days` | Read the cast days, characters and booking state. |
+| `/bookings` | Review tentative, confirmed and absent bookings. |
+| `/risks` | Read day-specific risks, controls, owners and review dates. |
+| `/work-hours` | Reconcile daily working-hours records and missing wrap times. |
+| `/rest-gaps` | Review recorded rest intervals below the production policy. |
+| `/wrap-report` | Compare completed scenes and page eighths against the planned work. |
+| `/attention` | Show decisions in priority order, with the affected records. |
+| `/compliance` | Check safety record completeness. Open docs/compliance.md before interpreting any rule. |
+| `/notes` | Read production notes before drafting a response. |
+| `/audit` | Read the most recent record changes with before/after evidence available in audit_events. |
+| `/call-sheet` | Review one day's scenes, calls, risks and gaps |
+| `/weekly-review` | The shoot week, attention list and progress in one review |
+| `/add` `/update` `/log` | Enter and correct verified records with an audit trail |
+| `/schedule-scene` `/mark-shot` | Put a scene on a matching day or record that it was shot |
+| `/draft-call-sheet` `/draft-weekly-review` | Save branded HTML in drafts/, never send |
+| `/import` `/export` | Bring daily Dramatify hours in, or export all records |
+| `/customise` `/new-view` | Change your fields, policy or read-only reports |
+
+Every CLI route supports --json. Names match case-insensitively and ID prefixes work. An ambiguous name lists candidates and exits 1. Exact references always win. Run `npm run production -- help` for syntax. There are no email, calendar or publishing integrations.
+
+## Paperwork and views
+
+`npm run docs` renders one draft call sheet, daily production report and risk register per shoot day. `npm run view` renders the shoot week, cast and crew readiness, and working-hours review. Change the business name, colours and logo in brand.json. Open the generated HTML locally or print it to PDF. No server runs and none of the files are published. OUTPUT_DIR redirects generated output for tests.
 
 ## Instead of Dramatify
 
-<!-- TODO(author): how to bring data across from Dramatify; link docs/replace-dramatify.md -->
+[The switch guide](docs/replace-dramatify.md) explains the supported daily working-hours export and the columns to map. Import in one command after matching the roster and the export headers:
 
-## Architecture
-
-```
-screen-production-for-claude-code/
-  CLAUDE.md                 how the operator wants this run (routing table + house rules)
-  AGENTS.md                 the same, for Codex / OpenCode / Cursor / Gemini CLI
-  .claude/commands/         the slash commands
-  scripts/                  the CLI the commands drive
-  scripts/lib/db.mjs        one adapter: DATABASE_URL (pg) or embedded PGlite
-  supabase/migrations/      plain SQL schema
-  supabase/seed.sql         demo data
-  docs/                     the thesis and the migration guide
+```bash
+node scripts/production.mjs import dramatify --file=imports/hours.csv --production=P-101 --date=2026-11-10 --mapping=imports/mapping.json --dry-run
 ```
 
-## Built for coding agents
+Repeat without --dry-run to apply. The whole file succeeds or nothing changes. Re-importing updates the same person, production and date. This is not a complete Dramatify project restore. Scripts, breakdowns, schedules, budgets and attachments require their own mapping and review. A documented vendor export is available, but a real customer export has not been tested in this build. Test fixtures are synthetic and labelled accordingly.
 
-The database, CLI and command recipes work with Claude Code, Codex, OpenCode or Cursor. Ask your coding agent for a new command and have it implement and test the change against the same records.
+## Ten questions to bring to your own records
 
-## Contributing
+These are implemented today. This is not a claim that Dramatify cannot answer any of them through its own reports or integrations.
 
-Issues and pull requests are welcome. Keep the shape: plain SQL, a small CLI, a slash command per recurring job, no front end.
+1. Which scenes have cast without confirmed cover for the whole day? (`/cast-gaps`)
+2. Who is double-booked across our productions, including overnight work? (`/crew-clashes`)
+3. Which locations have overlapping unit bookings? (`/location-clashes`)
+4. Which shoot days are missing safety contacts or daily briefing records? (`/compliance`)
+5. Which permissions expire before the planned shoot? (`/compliance`)
+6. Which risk controls are still open or due for review? (`/risks`)
+7. Which scenes missed their shoot date and which have no date? (`/attention`)
+8. How many page eighths have we shot on each production? (`/wrap-report`)
+9. Which daily hours are missing a wrap or exceed our own long-day policy? (`/work-hours`)
+10. Who has less than our agreed rest interval between recorded shifts? (`/rest-gaps`)
 
-## Want it installed and run for you?
+## Your first hour: ten things to ask for
 
-Enterprise DNA installs Screen Production for Claude Code for your business, migrates your Dramatify data, connects it to the rest of your tools, and runs it for you as part of **Omni**, our managed Command Center. One setup fee, then a monthly retainer.
+1. Show tomorrow's cast gaps and read each person's booking.
+2. Show the camera operator's two clashing days.
+3. Read the wharf permission date and the missing emergency plan.
+4. Add the renewed permission from the document I supply.
+5. Record the production safety adviser's agreed wharf controls and review date.
+6. Confirm the cast booking after I provide the acceptance.
+7. Move the unshot exterior to a matching location and day.
+8. Correct yesterday's wrap from the approved working-hours record.
+9. Draft tomorrow's call sheet with every remaining issue visible.
+10. Add a weather-cover field and a view of scenes that have no cover plan.
 
-- Book a call: [enterprisedna.co/omni/book](https://enterprisedna.co/omni/book/?offer=replace-software&utm_source=github&utm_medium=readme&utm_campaign=dramatify)
-- Read more: [enterprisedna.co/omni/instead-of/dramatify](https://enterprisedna.co/omni/instead-of/dramatify?utm_source=github&utm_medium=readme&utm_campaign=dramatify)
+## Safety and time records
 
-## License
+Read [docs/compliance.md](docs/compliance.md). Checks identify missing records and apply explicit office policies. They do not approve a shoot or certify legal compliance. Day-specific call-sheet safety information follows ScreenSafe guidance. Risk review checks are an implementation of a recordkeeping workflow informed by WorkSafe guidance. The default twelve-hour rest and long-day thresholds are demo office policies, not law or an interpretation of an award. No payroll, wage calculation or payments exist here.
 
-MIT. Copyright (c) 2026 Enterprise DNA.
+All productions use one office's local calendar clock. Durations are wall-clock minutes, not timezone or daylight-saving adjusted payroll hours. For cross-timezone units, change the model to timezone-aware timestamps before importing. Keep private cast and crew records in the database and generated output, which are excluded from Git. Generated exports are sensitive. Test restore using snapshot.json before relying on exports as a backup.
+
+## Verification
+
+`npm test` uses a disposable PGlite database, exercises every CLI route, asserts domain constraints and import rollback, checks HTML escaping, and renders all documents and views. The CI workflow runs Node 22 on Windows and Linux and also verifies the migration, seed and core reads on PostgreSQL. See the workflow results for which platforms have actually completed.
+
+## Installed and run for you
+
+Enterprise DNA maps your records, adapts the checks, adds a team screen or a different stack if needed, and operates your version through **Omni by Enterprise DNA**. One setup fee, then a retainer. [Spend 30 minutes with Sam](https://enterprisedna.co/omni/book/?offer=replace-software&utm_medium=readme-closing&utm_campaign=dramatify).
+
+MIT licence. Dramatify is a separate product. This project is not affiliated with its vendor.

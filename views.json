@@ -1,13 +1,58 @@
 [
   {
-    "name": "week",
-    "title": "This week",
-    "subtitle": "Screen Production for Claude Code: what needs attention, rendered by npm run view",
+    "name": "shoot-week",
+    "title": "The shoot week",
+    "subtitle": "Demo production office. Times use one production-office clock.",
     "sections": [
       {
-        "title": "Needs attention",
-        "note": "TODO(author): point this at the industry's attention view (overdue, stuck, quiet).",
-        "sql": "select 'replace me' as item, 'TODO(author)' as why"
+        "title": "Next seven days",
+        "sql": "select ref,production,shoot_date,unit,location,scenes,planned_minutes,confirmed_people from v_schedule where shoot_date between current_date and current_date+7 order by shoot_date,ref"
+      },
+      {
+        "title": "Needs a decision",
+        "sql": "select * from v_attention order by priority,category,ref"
+      },
+      {
+        "title": "Progress",
+        "sql": "select * from v_progress order by ref"
+      }
+    ]
+  },
+  {
+    "name": "cast-and-crew",
+    "title": "Cast and crew readiness",
+    "sections": [
+      {
+        "title": "Missing cast coverage",
+        "sql": "select shoot_day,scene,person,character_name,booking_status from v_cast_gaps order by shoot_date,scene"
+      },
+      {
+        "title": "Clashing bookings",
+        "sql": "select person,first_day,second_day,shoot_date from v_conflicts order by shoot_date"
+      },
+      {
+        "title": "Location clashes",
+        "sql": "select * from v_location_conflicts order by shoot_date"
+      }
+    ]
+  },
+  {
+    "name": "working-hours",
+    "title": "Working-hours review",
+    "subtitle": "Recorded wall-clock minutes only. This is not payroll.",
+    "sections": [
+      {
+        "title": "Working hours",
+        "sql": "select ref,production,person,work_date,status,worked_minutes,flag from v_hours order by work_date,person"
+      },
+      {
+        "title": "Rest policy flags",
+        "note": "The demo policy asks for 720 minutes between recorded shifts. Set your agreed production policy. This is not a statutory threshold.",
+        "sql": "select * from v_rest_gaps order by work_date,person"
+      },
+      {
+        "title": "Safety record checks",
+        "sql": "select shoot_day,rule,issue from v_compliance order by shoot_date,shoot_day"
       }
     ]
   }

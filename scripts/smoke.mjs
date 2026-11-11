@@ -1,0 +1,90 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { spawnSync } from 'node:child_process';
+import { getDb,REPO_ROOT } from './lib/db.mjs';
+import { migrate } from './migrate.mjs';
+import { seed } from './seed.mjs';
+import { execute } from './production.mjs';
+const scratch=fs.mkdtempSync(path.join(os.tmpdir(),'screen-production-test-'));
+process.env.DATABASE_URL='';process.env.DATA_DIR=path.join(scratch,'db');process.env.OUTPUT_DIR=path.join(scratch,'output');
+const db=await getDb();let checks=0;
+const test=async(name,fn)=>{await fn();checks++;console.log('ok '+checks+' '+name);};
+const run=(...args)=>execute(db,args);
+const bad=async(args,re)=>assert.rejects(()=>run(...args),re);
+const rows=async(sql)=>db.query(sql);
+const fixture=(name,text)=>{const p=path.join(scratch,name);fs.writeFileSync(p,text);return p;};
+let dbClosed=false;
+try{
+ await test('migrations and seed are repeatable',async()=>{assert.equal((await migrate(db)).ran.length,2);assert.equal((await migrate(db)).ran.length,0);await seed(db);await seed(db);assert.equal((await run('productions')).length,2);assert.equal((await run('people')).length,6);});
+ const tomorrow=(await rows("select (current_date+1)::text d"))[0].d;
+ const yesterday=(await rows("select (current_date-1)::text d"))[0].d;
+ const today=(await rows("select current_date::text d"))[0].d;
+ await test('all read commands return real records',async()=>{for(const name of ['productions','people','locations','shoot-week','schedule','scenes','cast-gaps','crew-clashes','location-clashes','day-out-of-days','bookings','risks','work-hours','rest-gaps','wrap-report','attention','compliance','notes','audit'])assert(Array.isArray(await run(name)),name);assert.match((await run('help')).help,/schedule-scene/);});
+ await test('demo exposes missed work, cast gaps, conflicts and safety records',async()=>{const a=await run('attention');for(const c of ['Safety records','Cast coverage','Crew clash','Hours','Rest policy','Missed scene','Unscheduled scene','Missing hours'])assert(a.some(x=>x.category===c),c);assert.equal((await run('cast-gaps')).length,2);assert.equal((await run('crew-clashes')).length,1);assert.equal((await run('rest-gaps'))[0].rest_minutes,'540');const p=(await run('wrap-report')).find(x=>x.ref==='P-101');assert.equal(Number(p.shot),1);assert.equal(Number(p.missed),1);assert.equal(Number(p.unscheduled),1);});
+ await test('case-insensitive names and id prefixes resolve; ambiguity exits safely',async()=>{assert.equal((await run('card','person','mArA'))[0].ref,'C-101');const p=(await run('card','person','C-101'))[0];assert.equal((await run('card','person',p.id.slice(0,8)))[0].id,p.id);await bad(['card','person','Alex'],/Ambiguous.*Alex[\s\S]*W-101[\s\S]*W-102/);await bad(['card','person','%'],/No person/);});
+ await test('call sheet includes gaps and weekly review reconciles three commands',async()=>{const s=await run('call-sheet','D-102');assert.equal(s.cast.length,2);assert(s.safety.length>=3);const w=await run('weekly-review');assert.deepEqual(w.progress,await run('wrap-report'));assert.deepEqual(w.attention,await run('attention'));});
+ await test('casts and scene schedules preserve domain relationships',async()=>{await bad(['add','cast','--ref=SC-BAD','--scene=S-103','--person=W-101','--character-name=June'],/cast member/);await bad(['schedule-scene','S-104','--day=D-103'],/share production and location/);await run('schedule-scene','S-104','--day=D-102');await bad(['set','day','D-102','--location=L-102'],/conflicts with assigned scenes/);await bad(['mark-shot','S-104'],/on or before today/);await run('mark-shot','S-102');assert.equal((await run('card','scene','S-102'))[0].status,'shot');});
+ await test('add and update all record types with constraints and audit trail',async()=>{
+ await run('add','production','--ref=P-X','--name=Test Production');
+ await run('add','location','--ref=L-X','--name=Test Studio','--permission-until='+tomorrow,'--emergency-plan=EP-X');
+ await run('add','person','--ref=C-X','--name=Test Cast','--kind=cast');
+ await run('add','day','--ref=D-X','--production=P-X','--location=L-X','--shoot-date='+today,'--start=08:00','--end=18:00');
+ await run('add','scene','--ref=S-X','--production=P-X','--location=L-X','--day=D-X','--name=Test Scene');
+ await run('add','cast','--ref=SC-X','--scene=S-X','--person=C-X','--character-name=Test Character');
+ await run('add','booking','--ref=B-X','--day=D-X','--person=C-X','--start=08:00','--end=18:00','--status=confirmed');
+ await run('add','risk','--ref=R-X','--day=D-X','--description=Example hazard','--review-due='+today);
+ await bad(['set','risk','R-X','--status=controlled'],/check constraint/);
+ await run('set','risk','R-X','--controls=Reviewed control','--owner=Responsible person','--status=controlled');
+ await run('add','hours','--ref=H-X','--production=P-X','--person=C-X','--work-date='+today,'--start=08:00','--end=18:00','--break=60');
+ await run('log','P-X','--text=Call confirmed from source.');
+ await bad(['set','person','C-X','--kind=crew'],/cast assignments/);
+ await bad(['set','scene','S-X','--day=D-102'],/share production and location/);
+ await bad(['set','day','D-X','--shoot-date=2026-02-30'],/Invalid calendar date/);
+ await bad(['set','booking','B-X','--start=08:99'],/Invalid clock/);
+ await bad(['set','hours','H-X','--break=900'],/check constraint/);
+ await bad(['set','person','C-X','--unsafe=1'],/Unknown person field/);
+ assert.equal((await run('card','hours','H-X'))[0].break_min,60);
+ assert((await rows("select * from audit_events where entity='risks' and action='UPDATE'")).length>0);
+ });
+ await test('booking overlaps include overnight and exclude adjacent calls',async()=>{
+ await run('add','day','--ref=D-N','--production=P-X','--location=L-X','--shoot-date='+yesterday,'--start=22:00','--end=26:00');
+ await run('add','booking','--ref=B-N','--day=D-N','--person=C-X','--start=22:00','--end=26:00','--status=confirmed');
+ await run('set','booking','B-X','--start=01:00');assert((await run('crew-clashes')).some(x=>x.person==='Test Cast'));
+ await run('set','booking','B-X','--start=02:00');assert(!(await run('crew-clashes')).some(x=>x.person==='Test Cast'));
+ });
+ await test('vendor import dry run, repeat import and explicit mappings',async()=>{
+ const f=fixture('hours.csv','\ufeffName,Check in,Check out,Break minutes,Status\r\nTest Cast,08:00,17:00,30,present\r\n');
+ const base=['import','dramatify','--file='+f,'--production=P-X','--date='+yesterday];
+ assert.equal((await run(...base,'--dry-run')).rows,1);
+ assert.equal((await rows("select * from work_logs where source='dramatify'")).length,0);
+ await run(...base);await run(...base);assert.equal((await rows("select * from work_logs where source='dramatify'")).length,1);
+ const f2=fixture('mapped.csv','Worker,Arrival,Departure,Pause,State\nTest Cast,09:00,18:00,60,present\n');
+ const map=fixture('mapping.json',JSON.stringify({person:'Worker',start:'Arrival',end:'Departure',break:'Pause',status:'State'}));
+ await run('import','dramatify','--file='+f2,'--mapping='+map,'--production=P-X','--date='+yesterday);
+ assert.equal((await rows("select start_min from work_logs where source='dramatify'"))[0].start_min,540);
+ });
+ await test('failed imports roll back the whole file, including audit entries',async()=>{
+ const n=(await rows('select count(*) n from audit_events'))[0].n;
+ const f=fixture('bad.csv','Name,Check in,Check out,Status\nTest Cast,07:00,18:00,present\nNobody Known,08:00,17:00,present\n');
+ await bad(['import','dramatify','--file='+f,'--production=P-X','--date='+yesterday],/CSV row 3/);
+ assert.equal((await rows("select start_min from work_logs where source='dramatify'"))[0].start_min,540);
+ assert.equal((await rows('select count(*) n from audit_events'))[0].n,n);
+ const dup=fixture('dup.csv','Name,Check in,Check out,Status\nTest Cast,08:00,17:00,present\nTest Cast,09:00,17:00,present\n');
+ await bad(['import','dramatify','--file='+dup,'--production=P-X','--date='+yesterday],/Duplicate person/);
+ const overnight=fixture('overnight.csv','Name,Check in,Check out,Status\nTest Cast,22:00,02:00,present\n');
+ await bad(['import','dramatify','--file='+overnight,'--production=P-X','--date='+yesterday],/Confirm overnight/);
+ const sick=fixture('sick.csv','Name,Check in,Check out,Status\nTest Cast,,,sick\n');
+ await run('import','dramatify','--file='+sick,'--production=P-X','--date='+yesterday);assert.equal((await rows("select start_min from work_logs where source='dramatify'"))[0].start_min,null);
+ });
+ await test('drafts and export contain the actual records and cannot overwrite exports',async()=>{
+ for(const cmd of [['draft-call-sheet','D-102'],['draft-weekly-review']]){const out=await run(...cmd);assert(fs.readFileSync(out.file,'utf8').includes('DRAFT'));}
+ const dir=path.join(scratch,'export');const e=await run('export','--out='+dir);const snap=JSON.parse(fs.readFileSync(path.join(dir,'snapshot.json')));assert.equal(e.counts.people,7);assert.equal(snap.tables.people.length,7);assert(snap.tables.audit_events.length>0);await bad(['export','--out='+dir],/EEXIST/);
+ });
+ await test('HTML escapes user data',async()=>{await run('set','person','C-X','--name=<script>alert(1)</script>');const f=(await run('draft-call-sheet','D-X')).file;const html=fs.readFileSync(f,'utf8');assert(html.includes('&lt;script&gt;'));assert(!html.includes('<script>alert'));});
+ await db.close();dbClosed=true;
+ await test('CLI exits 1 with candidates on ambiguity',async()=>{const p=spawnSync(process.execPath,['scripts/production.mjs','card','person','Alex','--json'],{cwd:REPO_ROOT,env:process.env,encoding:'utf8'});assert.equal(p.status,1);assert.match(p.stderr,/W-101[\s\S]*W-102/);});
+ await test('render all dashboards and documents against isolated data',async()=>{for(const name of ['view','docs']){const p=spawnSync(process.execPath,[`scripts/${name}.mjs`],{cwd:REPO_ROOT,env:process.env,encoding:'utf8'});assert.equal(p.status,0,p.stderr);}assert(fs.existsSync(path.join(process.env.OUTPUT_DIR,'views','shoot-week.html')));assert.equal(fs.readdirSync(path.join(process.env.OUTPUT_DIR,'docs-out','call-sheet')).length,5);});
+ console.log(`PASS: ${checks} end-to-end checks; every CLI route exercised on an isolated PGlite database.`);
+}finally{if(!dbClosed)await db.close();fs.rmSync(scratch,{recursive:true,force:true});}

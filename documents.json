@@ -1,11 +1,82 @@
 [
   {
-    "name": "example",
-    "title": "TODO(author): the first document this industry must produce",
-    "for_each": "select gen_random_uuid() as id, 'Example' as name",
+    "name": "call-sheet",
+    "title": "DRAFT call sheet",
+    "for_each": "select id,ref as name from shoot_days order by shoot_date,ref",
     "file": "name",
     "sections": [
-      { "title": "Details", "sql": "select 'replace me' as item, $1::text as record_id" }
+      {
+        "title": "Shoot day",
+        "layout": "record",
+        "sql": "select ref,production,title,shoot_date,unit,location,clock_time(start_min) as call,clock_time(end_min) as wrap,safety_contact,assessment_ref,briefing from v_schedule where id=$1"
+      },
+      {
+        "title": "Location and emergency plan",
+        "layout": "record",
+        "sql": "select l.address,l.emergency_plan,l.permission_until from shoot_days d join locations l on l.id=d.location_id where d.id=$1"
+      },
+      {
+        "title": "Scenes",
+        "sql": "select ref,name,eighths,duration_min,status from scenes where day_id=$1 order by order_no,ref"
+      },
+      {
+        "title": "Cast and crew calls",
+        "note": "A +1d wrap is on the next day. Review all calls before distribution.",
+        "sql": "select p.name,b.role,clock_time(b.start_min) as call,clock_time(b.end_min) as wrap,b.status from bookings b join people p on p.id=b.person_id where b.day_id=$1 order by b.start_min,p.name"
+      },
+      {
+        "title": "Outstanding safety records",
+        "note": "A blank section does not certify a safe shoot. The production safety adviser reviews the day.",
+        "sql": "select rule,issue,source from v_compliance where day_id=$1"
+      },
+      {
+        "title": "Cast not covered for the full day",
+        "sql": "select scene,person,booking_status from v_cast_gaps where day_id=$1"
+      },
+      {
+        "title": "Daily risks and controls",
+        "sql": "select description,controls,owner,review_due,status from risks where day_id=$1"
+      }
+    ]
+  },
+  {
+    "name": "production-report",
+    "title": "DRAFT daily production report",
+    "for_each": "select id,ref as name from shoot_days order by shoot_date,ref",
+    "file": "name",
+    "sections": [
+      {
+        "title": "Day",
+        "layout": "record",
+        "sql": "select ref,production,shoot_date,unit,location from v_schedule where id=$1"
+      },
+      {
+        "title": "Scene progress",
+        "sql": "select ref,name,eighths,status from scenes where day_id=$1 order by order_no,ref"
+      },
+      {
+        "title": "Recorded hours",
+        "note": "Hours are per production and date, not allocated to individual units.",
+        "sql": "select h.person,h.status,h.worked_minutes,h.flag from v_hours h join work_logs w on w.id=h.id join shoot_days d on d.production_id=w.production_id and d.shoot_date=w.work_date where d.id=$1 order by h.person"
+      }
+    ]
+  },
+  {
+    "name": "risk-register",
+    "title": "DRAFT shoot risk register",
+    "for_each": "select id,ref as name from shoot_days order by shoot_date,ref",
+    "file": "name",
+    "sections": [
+      {
+        "title": "Day",
+        "layout": "record",
+        "sql": "select ref,shoot_date,safety_contact,assessment_ref,briefing from shoot_days where id=$1"
+      },
+      {
+        "title": "Recorded risks",
+        "note": "The production safety adviser completes and approves the assessment. Software checks record completeness.",
+        "sql": "select ref,description,controls,owner,review_due,status from risks where day_id=$1 order by ref"
+      }
     ]
   }
 ]
