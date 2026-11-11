@@ -1,3 +1,7 @@
+---
+description: "location-clashes"
+---
+
 # location-clashes
 
 Find two units booked into the same location at overlapping times.

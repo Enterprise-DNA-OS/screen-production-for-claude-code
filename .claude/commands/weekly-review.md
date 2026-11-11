@@ -1,3 +1,7 @@
+---
+description: "Weekly production review"
+---
+
 # Weekly production review
 
 Run these three commands and read all their output:

@@ -1,3 +1,7 @@
+---
+description: "shoot-week"
+---
+
 # shoot-week
 
 Plan the next seven days of shooting.

@@ -1,3 +1,7 @@
+---
+description: "locations"
+---
+
 # locations
 
 Review location permissions and emergency plans.

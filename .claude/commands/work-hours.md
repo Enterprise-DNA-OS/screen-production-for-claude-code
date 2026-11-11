@@ -1,3 +1,7 @@
+---
+description: "work-hours"
+---
+
 # work-hours
 
 Reconcile daily working-hours records and missing wrap times.

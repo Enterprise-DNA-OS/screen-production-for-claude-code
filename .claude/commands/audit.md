@@ -1,3 +1,7 @@
+---
+description: "audit"
+---
+
 # audit
 
 Read the most recent record changes with before/after evidence available in audit_events.

@@ -14,7 +14,7 @@
       },
       {
         "title": "Progress",
-        "sql": "select * from v_progress order by ref"
+        "sql": "select ref,name,shot,scenes,unscheduled,missed from v_progress order by ref"
       }
     ]
   },

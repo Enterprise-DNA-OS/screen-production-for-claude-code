@@ -1,3 +1,7 @@
+---
+description: "bookings"
+---
+
 # bookings
 
 Review tentative, confirmed and absent bookings.

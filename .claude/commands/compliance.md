@@ -1,3 +1,7 @@
+---
+description: "compliance"
+---
+
 # compliance
 
 Check safety record completeness. Open docs/compliance.md before interpreting any rule.

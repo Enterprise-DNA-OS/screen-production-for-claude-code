@@ -1,3 +1,7 @@
+---
+description: "Make this production office yours"
+---
+
 # Make this production office yours
 
 Read CLAUDE.md, the schema, CLI, docs/compliance.md and the operator's requested change. Add a numbered migration, never rewrite an applied migration. Implement the field, stage or policy in the CLI and reports, and add a meaningful smoke assertion. For example, add a scene weather-cover field with a migration and include it in the scene card. Apply with `npm run migrate` after reviewing against a backup. Run `npm test`, `npm run view` and `npm run docs` on demo data first. Record why the change was requested. Never present an office policy as a legal rule. Never build a front end as part of this free base.

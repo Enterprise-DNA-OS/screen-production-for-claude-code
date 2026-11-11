@@ -1,3 +1,7 @@
+---
+description: "day-out-of-days"
+---
+
 # day-out-of-days
 
 Read the cast days, characters and booking state.

@@ -1,3 +1,7 @@
+---
+description: "people"
+---
+
 # people
 
 List cast and crew before choosing a name.
